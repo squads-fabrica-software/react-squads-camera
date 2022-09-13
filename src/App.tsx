@@ -7,85 +7,6 @@ interface Devices {
 }
 
 const App = (): JSX.Element => {
-  /*
-  const [message, setMessage] = useState('Obtendo Devices');
-  const [facingMode, setFacingMode] = useState(undefined as unknown as string);
-
-  const checkPermission = (): void => {
-    let constraints = {} as MediaTrackConstraints;
-    if (facingMode === 'user') {
-      constraints = {
-        facingMode: {
-          exact: facingMode,
-        },
-      };
-    } else {
-      constraints = {
-        facingMode: {
-          exact: facingMode,
-        },
-      };
-    }
-    navigator.mediaDevices
-      .getUserMedia({ audio: false, video: constraints })
-      .then(stream => {
-        const video = document.querySelector('#video') as HTMLVideoElement;
-        if (video) {
-          video.srcObject = stream;
-          video.play();
-        }
-      })
-      .catch(err => {
-        if (err.name === 'NotAllowedError') {
-          setMessage('User has denied accessed');
-        }
-      });
-  };
-
-  const stopVideo = (): void => {
-    navigator.mediaDevices
-      .getUserMedia({ audio: false, video: true })
-      .then(stream => {
-        stream.getTracks().forEach(track => {
-          track.stop();
-        });
-        stream.getVideoTracks().forEach(track => {
-          track.stop();
-        });
-        const video = document.querySelector('#video') as HTMLVideoElement;
-        if (video) {
-          const videoStream = video.srcObject as MediaStream;
-          if (videoStream) {
-            videoStream.getTracks().forEach(track => {
-              track.stop();
-            });
-          }
-          video.pause();
-          video.currentTime = 0;
-          video.srcObject = null;
-        }
-      })
-      .catch(err => {
-        if (err.name === 'NotAllowedError') {
-          setMessage('User has denied accessed');
-        }
-      });
-  };
-
-  const changeDeviceSelected = (e: React.ChangeEvent<HTMLSelectElement>): void => {
-    setMessage(e.target.value);
-    if (e.target.value !== '...') {
-      if (e.target.value !== facingMode) {
-        checkPermission();
-      }
-      setFacingMode(e.target.value);
-    } else {
-      stopVideo();
-      setFacingMode(undefined as unknown as string);
-    }
-  };
-  */
-
   const [loadingDevices, setLoadingDevices] = useState(false);
   const [devices, setDevices] = useState(undefined as unknown as Devices[]);
   const [message, setMessage] = useState('Obtendo Devices');
@@ -107,9 +28,10 @@ const App = (): JSX.Element => {
         const { userAgent } = navigator;
         setMessage(userAgent);
         if (
-          userAgent.match(/iPad/i) ||
-          userAgent.match(/iPhone/i) ||
-          userAgent.match(/AppleWebKit/i)
+          (userAgent.match(/iPad/i) ||
+            userAgent.match(/iPhone/i) ||
+            userAgent.match(/AppleWebKit/i)) &&
+          !userAgent.match(/Android/)
         ) {
           devicesNew.push({
             label: 'Frontal',
