@@ -1,26 +1,252 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 
-function App() {
+interface Devices {
+  label: string;
+  deviceId: string;
+}
+
+const App = (): JSX.Element => {
+  /*
+  const [message, setMessage] = useState('Obtendo Devices');
+  const [facingMode, setFacingMode] = useState(undefined as unknown as string);
+
+  const checkPermission = (): void => {
+    let constraints = {} as MediaTrackConstraints;
+    if (facingMode === 'user') {
+      constraints = {
+        facingMode: {
+          exact: facingMode,
+        },
+      };
+    } else {
+      constraints = {
+        facingMode: {
+          exact: facingMode,
+        },
+      };
+    }
+    navigator.mediaDevices
+      .getUserMedia({ audio: false, video: constraints })
+      .then(stream => {
+        const video = document.querySelector('#video') as HTMLVideoElement;
+        if (video) {
+          video.srcObject = stream;
+          video.play();
+        }
+      })
+      .catch(err => {
+        if (err.name === 'NotAllowedError') {
+          setMessage('User has denied accessed');
+        }
+      });
+  };
+
+  const stopVideo = (): void => {
+    navigator.mediaDevices
+      .getUserMedia({ audio: false, video: true })
+      .then(stream => {
+        stream.getTracks().forEach(track => {
+          track.stop();
+        });
+        stream.getVideoTracks().forEach(track => {
+          track.stop();
+        });
+        const video = document.querySelector('#video') as HTMLVideoElement;
+        if (video) {
+          const videoStream = video.srcObject as MediaStream;
+          if (videoStream) {
+            videoStream.getTracks().forEach(track => {
+              track.stop();
+            });
+          }
+          video.pause();
+          video.currentTime = 0;
+          video.srcObject = null;
+        }
+      })
+      .catch(err => {
+        if (err.name === 'NotAllowedError') {
+          setMessage('User has denied accessed');
+        }
+      });
+  };
+
+  const changeDeviceSelected = (e: React.ChangeEvent<HTMLSelectElement>): void => {
+    setMessage(e.target.value);
+    if (e.target.value !== '...') {
+      if (e.target.value !== facingMode) {
+        checkPermission();
+      }
+      setFacingMode(e.target.value);
+    } else {
+      stopVideo();
+      setFacingMode(undefined as unknown as string);
+    }
+  };
+  */
+
+  const [loadingDevices, setLoadingDevices] = useState(false);
+  const [devices, setDevices] = useState(undefined as unknown as Devices[]);
+  const [message, setMessage] = useState('Obtendo Devices');
+  const [selectedDevice, setSelectedDevice] = useState(undefined as unknown as Devices);
+
+  useEffect(() => {
+    if (!loadingDevices && !devices) {
+      setLoadingDevices(true);
+      const mediaDevices: MediaDeviceInfo[] = [];
+      navigator.mediaDevices.enumerateDevices().then((data: MediaDeviceInfo[]) => {
+        // eslint-disable-next-line no-plusplus
+        for (let i = 0; i < data.length; i++) {
+          const device = data[i];
+          if (data[i].kind === 'videoinput') {
+            mediaDevices.push(device);
+          }
+        }
+        const devicesNew: Devices[] = [];
+        const { userAgent } = navigator;
+        setMessage(userAgent);
+        if (
+          userAgent.match(/iPad/i) ||
+          userAgent.match(/iPhone/i) ||
+          userAgent.match(/AppleWebKit/i)
+        ) {
+          devicesNew.push({
+            label: 'Frontal',
+            deviceId: 'user',
+          });
+
+          devicesNew.push({
+            label: 'Traseira',
+            deviceId: 'environment',
+          });
+        } else {
+          devicesNew.push({
+            label: 'Frontal',
+            deviceId: mediaDevices[0].deviceId,
+          });
+          if (mediaDevices.length > 1) {
+            devicesNew.push({
+              label: 'Traseira',
+              deviceId: mediaDevices[mediaDevices.length - 1].deviceId,
+            });
+          }
+        }
+
+        setDevices(devicesNew);
+      });
+    }
+
+    if (devices) {
+      setLoadingDevices(false);
+      if (devices.length > 0) {
+        // setMessage('Devices encontrados');
+      } else {
+        setMessage('Nenhuma camera encontrada');
+      }
+    }
+  }, [loadingDevices, devices, message]);
+
+  const checkPermission = (): void => {
+    let constraints: MediaTrackConstraints = {
+      advanced: [
+        {
+          deviceId: selectedDevice.deviceId,
+        },
+      ],
+    };
+    if (selectedDevice.deviceId === 'user' || selectedDevice.deviceId === 'environment') {
+      constraints = {
+        advanced: [
+          {
+            facingMode: selectedDevice.deviceId,
+          },
+        ],
+      };
+    }
+    navigator.mediaDevices
+      .getUserMedia({ audio: false, video: constraints })
+      .then(stream => {
+        const video = document.querySelector('#video') as HTMLVideoElement;
+        if (video) {
+          video.srcObject = stream;
+          video.play();
+        }
+      })
+      .catch(err => {
+        setMessage(err.name);
+      });
+  };
+
+  useEffect(() => {
+    if (selectedDevice && selectedDevice.deviceId !== '...') {
+      checkPermission();
+    } else {
+      navigator.mediaDevices
+        .getUserMedia({ audio: false, video: true })
+        .then(stream => {
+          stream.getTracks().forEach(track => {
+            if (track.readyState === 'live') {
+              track.stop();
+            }
+          });
+          stream.getVideoTracks().forEach(track => {
+            track.stop();
+          });
+          const video = document.querySelector('#video') as HTMLVideoElement;
+          if (video) {
+            const videoStream = video.srcObject as MediaStream;
+            if (videoStream) {
+              videoStream.getTracks().forEach(track => {
+                track.stop();
+              });
+            }
+            video.pause();
+            video.currentTime = 0;
+            video.srcObject = null;
+          }
+        })
+        .catch(err => {
+          setMessage(err.name);
+        });
+    }
+  }, [selectedDevice]);
+
+  const changeDeviceSelected = (e: React.ChangeEvent<HTMLSelectElement>): void => {
+    if (e.target.value !== '...') {
+      // eslint-disable-next-line no-plusplus
+      for (let i = 0; i < devices.length; i++) {
+        const device = devices[i];
+        if (device.deviceId === e.target.value) {
+          setSelectedDevice(device);
+          break;
+        }
+      }
+    } else {
+      setSelectedDevice(undefined as unknown as MediaDeviceInfo);
+    }
+  };
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
+        <p>{message}</p>
+        {devices && devices.length > 0 && (
+          <p>
+            <select onChange={e => changeDeviceSelected(e)}>
+              <option>...</option>
+              {devices.map(data => (
+                <option key={data.deviceId} value={data.deviceId}>
+                  {data.label}
+                </option>
+              ))}
+            </select>
+          </p>
+        )}
+        <p id="div_video">
+          <video id="video" playsInline></video>
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
       </header>
     </div>
   );
-}
-
+};
 export default App;
